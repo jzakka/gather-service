@@ -13,6 +13,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
 
 eureka:
   instance:
