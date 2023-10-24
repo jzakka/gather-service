@@ -35,5 +35,5 @@ public class GatherEntity {
     @Column(nullable = false)
     private LocalDateTime deadLine;
     @CreatedDate
-    private LocalDateTime createDate;
+    private LocalDateTime createdAt;
 }

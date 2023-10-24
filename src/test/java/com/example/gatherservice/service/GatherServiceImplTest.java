@@ -1,6 +1,9 @@
 package com.example.gatherservice.service;
 
 import com.example.gatherservice.dto.GatherDto;
+import com.example.gatherservice.dto.GatherMemberDto;
+import com.example.gatherservice.dto.SelectDateTimeDto;
+import com.example.gatherservice.rule.Rule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,14 @@ class GatherServiceImplTest {
 
     @Autowired
     Environment env;
+
+    // 테스트용 더미 날짜
+    LocalDate startDate = LocalDate.of(2077, 10, 3);
+    LocalDate endDate = LocalDate.of(2077, 10, 10);
+    LocalTime startTime = LocalTime.of(3, 30);
+    LocalTime endTime = LocalTime.of(15, 30);
+    LocalTime duration = LocalTime.of(1, 30);
+    LocalDateTime deadLine = LocalDateTime.of(2077, 10, 2, 0,0);
 
     @Test
     @DisplayName("모임 생성 테스트 -> 성공")
@@ -100,6 +111,66 @@ class GatherServiceImplTest {
         assertThatThrownBy(() -> gatherService.createGather(dto))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining(env.getProperty("gather.validation.deadline-invalid-msg"));
+    }
+
+    @Test
+    @DisplayName("방 입장 테스트 -> 성공")
+    void joinGatherTestSuccess() {
+        /**
+         * 모임 참가 가능 날짜 2077/10/3 ~ 2077/10/10
+         * 참여 가능 시간     03:30 ~ 15:30
+         * 모임 진행 기간     01:30
+         * 모임 참여 마감     2077/10/2 00:00
+         */
+        GatherDto dto = dummyGatherDto(
+                "테스트 모임", "테스트 설명",
+                startDate, endDate,
+                startTime, endTime,
+                duration,
+                deadLine
+        );
+
+        GatherDto createdGather = gatherService.createGather(dto);
+
+        /**
+         * 2077년 10월 3일 4시 5분 ~ 2077년 10월 3일 5시 40분
+         * 2077년 10월 5일 5시 7분 ~ 2077년 10월 5일 6시 52분
+         *
+         * test유저가 위의 시간에 모임이 가능하다는 참여 의사를 요청
+         */
+        GatherMemberDto joinDto = dummyGatherMemberDto(
+                createdGather.getGatherId(),
+                "test-user-id",
+                Rule.MEMBER,
+                LocalDateTime.of(2077, 10, 3, 4, 5),
+                LocalDateTime.of(2077, 10, 3, 5, 40),
+                LocalDateTime.of(2077, 10, 5, 5, 7),
+                LocalDateTime.of(2077, 10, 5, 6, 52)
+        );
+
+        GatherMemberDto joinedResult = gatherService.joinGather(joinDto);
+
+        assertThat(joinedResult.getUserId()).isEqualTo("test-user-id");
+        assertThat(joinedResult.getRule()).isEqualTo(Rule.MEMBER);
+        assertThat(joinedResult.getSelectDateTimes().size()).isEqualTo(2); // 선택한 시간대가 2개임
+    }
+
+    private GatherMemberDto dummyGatherMemberDto(String gatherId,
+                                                 String userId, Rule rule, LocalDateTime ... selectDateTimes) {
+        GatherMemberDto joinDto = new GatherMemberDto();
+        joinDto.setGatherId(gatherId);
+        joinDto.setUserId(userId);
+        joinDto.setRule(rule);
+
+        for (int i = 0; i < selectDateTimes.length; i+=2) {
+            SelectDateTimeDto selectDateTimeDto = new SelectDateTimeDto();
+            selectDateTimeDto.setStartDateTime(selectDateTimes[i]);
+            selectDateTimeDto.setEndDateTime(selectDateTimes[i + 1]);
+
+            joinDto.getSelectDateTimes().add(selectDateTimeDto);
+        }
+
+        return joinDto;
     }
 
     private GatherDto dummyGatherDto(String name,

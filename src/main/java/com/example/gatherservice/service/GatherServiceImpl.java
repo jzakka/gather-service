@@ -1,8 +1,10 @@
 package com.example.gatherservice.service;
 
 import com.example.gatherservice.dto.GatherDto;
-import com.example.gatherservice.dto.JoinGatherDto;
+import com.example.gatherservice.dto.GatherMemberDto;
 import com.example.gatherservice.entity.GatherEntity;
+import com.example.gatherservice.entity.GatherMemberEntity;
+import com.example.gatherservice.repository.GatherMemberRepository;
 import com.example.gatherservice.repository.GatherRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @Transactional
 public class GatherServiceImpl implements GatherService {
     private final GatherRepository gatherRepository;
+    private final GatherMemberRepository gatherMemberRepository;
     private final ModelMapper mapper;
     private final Environment env;
 
@@ -73,12 +75,20 @@ public class GatherServiceImpl implements GatherService {
 
     @Override
     public GatherDto getGatherByGatherId(String gatherId) {
-        return null;
+        GatherEntity gather = gatherRepository
+                .findByGatherId(gatherId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, env.getProperty("gather.not-found-msg")));
+
+        return mapper.map(gather, GatherDto.class);
     }
 
     @Override
-    public JoinGatherDto joinGather(JoinGatherDto joinGatherDto) {
-        return null;
+    public GatherMemberDto joinGather(GatherMemberDto joinGatherDto) {
+        GatherMemberEntity member = mapper.map(joinGatherDto, GatherMemberEntity.class);
+
+        GatherMemberEntity savedResult = gatherMemberRepository.save(member);
+
+        return mapper.map(savedResult, GatherMemberDto.class);
     }
 
     @Override
