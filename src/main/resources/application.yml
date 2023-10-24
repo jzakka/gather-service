@@ -25,3 +25,10 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+gather:
+  validation:
+    date-invalid-msg: 시작 날짜는 끝 날짜보다 늦을 수 없습니다.
+    time-invalid-msg: 시작 시간은 끝 시간보다 늦을 수 없습니다.
+    duration-invalid-msg: 모임 기간이 선택가능한 시간보다 깁니다.
+    deadline-invalid-msg: 마감일자가 시작시간보다 하루 이상 앞서야합니다.
