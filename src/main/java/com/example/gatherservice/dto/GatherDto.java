@@ -1,7 +1,6 @@
 package com.example.gatherservice.dto;
 
-import jakarta.persistence.Column;
-import lombok.AllArgsConstructor;
+import com.example.gatherservice.rule.GatherState;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -19,4 +18,5 @@ public class GatherDto {
     private LocalTime endTime;
     private LocalTime duration;
     private LocalDateTime deadLine;
+    private GatherState state;
 }

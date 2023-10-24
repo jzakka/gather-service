@@ -1,5 +1,6 @@
 package com.example.gatherservice.entity;
 
+import com.example.gatherservice.rule.GatherState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -34,6 +35,9 @@ public class GatherEntity {
     private LocalTime duration;
     @Column(nullable = false)
     private LocalDateTime deadLine;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private GatherState state;
     @CreatedDate
     private LocalDateTime createdAt;
 }

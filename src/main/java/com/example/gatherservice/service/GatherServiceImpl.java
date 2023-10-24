@@ -2,10 +2,12 @@ package com.example.gatherservice.service;
 
 import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.dto.GatherMemberDto;
+import com.example.gatherservice.dto.SelectDateTimeDto;
 import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.entity.GatherMemberEntity;
 import com.example.gatherservice.repository.GatherMemberRepository;
 import com.example.gatherservice.repository.GatherRepository;
+import com.example.gatherservice.rule.GatherState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -33,6 +35,7 @@ public class GatherServiceImpl implements GatherService {
     public GatherDto createGather(GatherDto gatherDto) {
         validate(gatherDto);
 
+        gatherDto.setState(GatherState.OPEN);
         gatherDto.setGatherId(UUID.randomUUID().toString());
         GatherEntity gather = mapper.map(gatherDto, GatherEntity.class);
 
@@ -85,10 +88,44 @@ public class GatherServiceImpl implements GatherService {
     @Override
     public GatherMemberDto joinGather(GatherMemberDto joinGatherDto) {
         GatherMemberEntity member = mapper.map(joinGatherDto, GatherMemberEntity.class);
+        validate(joinGatherDto);
 
         GatherMemberEntity savedResult = gatherMemberRepository.save(member);
 
         return mapper.map(savedResult, GatherMemberDto.class);
+    }
+
+    private void validate(GatherMemberDto joinGatherDto) {
+        /**
+         * 사용자 선택 날짜, 시간은 모임의 시작 날짜, 시간보다 이를 수 없다.
+         * 사용자 선택 날짜, 시간은 모임의 끝 날짜, 시간보다 늦을 수 없다.
+         * 현재 시간이 모임 마감날짜보다 늦다면 참여가 불가능하다.
+         */
+        String errorMessage = null;
+
+        GatherEntity gather = gatherRepository
+                .findByGatherId(joinGatherDto.getGatherId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, env.getProperty("gather.not-found-msg")));
+
+        for (SelectDateTimeDto selectDateTime : joinGatherDto.getSelectDateTimes()) {
+            LocalDateTime startDateTime = selectDateTime.getStartDateTime();
+            LocalDateTime endDateTime = selectDateTime.getEndDateTime();
+
+            if (startDateTime.toLocalDate().isBefore(gather.getStartDate())
+                    || startDateTime.toLocalTime().isBefore(gather.getStartTime())
+                    || endDateTime.toLocalDate().isAfter(gather.getEndDate())
+                    || endDateTime.toLocalTime().isAfter(gather.getEndTime())) {
+                errorMessage = env.getProperty("select-time.validation.select-invalid-msg");
+                break;
+            } else if (!gather.getState().equals(GatherState.OPEN)) {
+                errorMessage = env.getProperty("select-time.validation.deadline-msg");
+                break;
+            }
+        }
+
+        if (errorMessage != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
+        }
     }
 
     @Override
@@ -98,6 +135,11 @@ public class GatherServiceImpl implements GatherService {
 
     @Override
     public void closeGather(String gatherId) {
+        GatherEntity gather = gatherRepository.findByGatherId(gatherId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, env.getProperty("gather.not-found-msg")));
 
+        gather.setState(GatherState.CLOSED);
+
+        gatherRepository.save(gather);
     }
 }
