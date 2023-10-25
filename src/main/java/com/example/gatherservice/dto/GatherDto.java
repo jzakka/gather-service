@@ -1,6 +1,6 @@
 package com.example.gatherservice.dto;
 
-import com.example.gatherservice.rule.GatherState;
+import com.example.gatherservice.enums.GatherState;
 import lombok.Data;
 
 import java.time.LocalDate;

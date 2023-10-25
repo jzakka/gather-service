@@ -1,5 +1,6 @@
 package com.example.gatherservice.vo;
 
+import com.example.gatherservice.enums.GatherState;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -17,4 +18,5 @@ public class ResponseGather {
     LocalTime endTime;
     LocalTime duration;
     LocalDateTime deadLine;
+    private GatherState state;
 }

@@ -1,6 +1,6 @@
 package com.example.gatherservice.entity;
 
-import com.example.gatherservice.rule.GatherState;
+import com.example.gatherservice.enums.GatherState;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;

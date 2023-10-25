@@ -1,4 +1,4 @@
-package com.example.gatherservice.rule;
+package com.example.gatherservice.enums;
 
 public enum GatherState {
     OPEN,   // 모임에 아직 참여 가능함

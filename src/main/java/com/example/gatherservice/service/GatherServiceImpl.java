@@ -3,7 +3,7 @@ package com.example.gatherservice.service;
 import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.repository.GatherRepository;
-import com.example.gatherservice.rule.GatherState;
+import com.example.gatherservice.enums.GatherState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
