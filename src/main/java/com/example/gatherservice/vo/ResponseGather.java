@@ -9,6 +9,7 @@ import java.time.LocalTime;
 
 @Data
 public class ResponseGather {
+    private String gatherId;
     private String name;
     private String userId;
     private String description;

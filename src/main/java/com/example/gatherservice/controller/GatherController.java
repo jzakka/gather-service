@@ -9,9 +9,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +25,15 @@ public class GatherController {
         GatherDto createdGatherDto = gatherService.createGather(requestDto);
 
         ResponseGather body = mapper.map(createdGatherDto, ResponseGather.class);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    @GetMapping("/gathers/{gatherId}")
+    public ResponseEntity<ResponseGather> getGather(@PathVariable String gatherId) {
+        GatherDto gatherDto = gatherService.getGatherByGatherId(gatherId);
+
+        ResponseGather body = mapper.map(gatherDto, ResponseGather.class);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
