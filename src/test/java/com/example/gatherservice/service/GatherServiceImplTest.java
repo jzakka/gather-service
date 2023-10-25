@@ -36,6 +36,7 @@ class GatherServiceImplTest {
     void createGatherSuccess() {
         GatherDto dto = dummyGatherDto(
                 "테스트 모임", "테스트 설명",
+                "test-user-id",
                 startDate, endDate,
                 startTime, endTime,
                 duration,
@@ -51,7 +52,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 날짜 테스트")
     void createInvalidDateGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명",
+                "테스트 모임", "테스트 설명","test-user-id",
                 LocalDate.now().plusDays(1), LocalDate.now(),
                 LocalTime.now(), LocalTime.now().plusHours(1),
                 LocalTime.of(1, 30),
@@ -67,7 +68,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 시간 테스트")
     void createInvalidTimeGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명",
+                "테스트 모임", "테스트 설명","test-user-id",
                 startDate, endDate,
                 endTime, startTime,
                 duration,
@@ -83,7 +84,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 모임기간 테스트")
     void createInvalidDurationGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명",
+                "테스트 모임", "테스트 설명","test-user-id",
                 startDate, endDate,
                 startTime, endTime,
                 duration.plusHours(12),
@@ -99,7 +100,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 마감기간 테스트")
     void createInvalidDeadLineGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명",
+                "테스트 모임", "테스트 설명","test-user-id",
                 startDate, endDate,
                 startTime, endTime,
                 duration,
@@ -114,6 +115,7 @@ class GatherServiceImplTest {
 
     private GatherDto dummyGatherDto(String name,
                                      String description,
+                                     String userId,
                                      LocalDate startDate,
                                      LocalDate endDate,
                                      LocalTime startTime,
@@ -123,6 +125,7 @@ class GatherServiceImplTest {
         GatherDto gatherDto = new GatherDto();
 
         gatherDto.setName(name);
+        gatherDto.setUserId(userId);
         gatherDto.setDescription(description);
         gatherDto.setStartDate(startDate);
         gatherDto.setEndDate(endDate);

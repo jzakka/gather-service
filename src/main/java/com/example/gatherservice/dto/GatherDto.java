@@ -11,6 +11,7 @@ import java.time.LocalTime;
 public class GatherDto {
     private String name;
     private String gatherId;
+    private String userId;
     private String description;
     private LocalDate startDate;
     private LocalDate endDate;

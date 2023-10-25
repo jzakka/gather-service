@@ -21,6 +21,8 @@ public class GatherEntity {
     @Column(nullable = false, unique = true)
     private String gatherId;
     @Column(nullable = false)
+    private String userId;
+    @Column(nullable = false)
     private String name;
     private String description;
     @Column(nullable = false)
