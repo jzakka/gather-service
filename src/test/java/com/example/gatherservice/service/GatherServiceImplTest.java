@@ -1,10 +1,12 @@
 package com.example.gatherservice.service;
 
 import com.example.gatherservice.dto.GatherDto;
+import com.example.gatherservice.scheduler.GatherScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.env.Environment;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@MockBean({GatherScheduler.class})
 class GatherServiceImplTest {
     @Autowired
     GatherService gatherService;
