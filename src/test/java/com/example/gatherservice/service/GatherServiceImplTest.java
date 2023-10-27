@@ -1,9 +1,15 @@
 package com.example.gatherservice.service;
 
+import com.example.gatherservice.client.JoinServiceClient;
+import com.example.gatherservice.dto.ConfirmedGatherDto;
 import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.scheduler.GatherScheduler;
+import com.example.gatherservice.vo.ResponseDateTime;
+import com.example.gatherservice.vo.ResponseJoin;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,6 +30,9 @@ class GatherServiceImplTest {
     @Autowired
     GatherService gatherService;
 
+    @MockBean
+    JoinServiceClient joinServiceClient;
+
     @Autowired
     Environment env;
 
@@ -32,7 +42,7 @@ class GatherServiceImplTest {
     LocalTime startTime = LocalTime.of(3, 30);
     LocalTime endTime = LocalTime.of(15, 30);
     LocalTime duration = LocalTime.of(1, 30);
-    LocalDateTime deadLine = LocalDateTime.of(2077, 10, 2, 0,0);
+    LocalDateTime deadLine = LocalDateTime.of(2077, 10, 2, 0, 0);
 
     @Test
     @DisplayName("모임 생성 테스트 -> 성공")
@@ -55,7 +65,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 날짜 테스트")
     void createInvalidDateGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명","test-user-id",
+                "테스트 모임", "테스트 설명", "test-user-id",
                 LocalDate.now().plusDays(1), LocalDate.now(),
                 LocalTime.now(), LocalTime.now().plusHours(1),
                 LocalTime.of(1, 30),
@@ -71,7 +81,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 시간 테스트")
     void createInvalidTimeGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명","test-user-id",
+                "테스트 모임", "테스트 설명", "test-user-id",
                 startDate, endDate,
                 endTime, startTime,
                 duration,
@@ -87,7 +97,7 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 모임기간 테스트")
     void createInvalidDurationGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명","test-user-id",
+                "테스트 모임", "테스트 설명", "test-user-id",
                 startDate, endDate,
                 startTime, endTime,
                 duration.plusHours(12),
@@ -103,16 +113,117 @@ class GatherServiceImplTest {
     @DisplayName("잘못된 마감기간 테스트")
     void createInvalidDeadLineGather() {
         GatherDto dto = dummyGatherDto(
-                "테스트 모임", "테스트 설명","test-user-id",
+                "테스트 모임", "테스트 설명", "test-user-id",
                 startDate, endDate,
                 startTime, endTime,
                 duration,
-                LocalDateTime.of(startDate, LocalTime.of(0,0))
+                LocalDateTime.of(startDate, LocalTime.of(0, 0))
         );
 
         assertThatThrownBy(() -> gatherService.createGather(dto))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining(env.getProperty("gather.validation.deadline-invalid-msg"));
+    }
+
+    @Test
+    @DisplayName("모임 시간 계산 테스트")
+    void calculate() {
+        GatherDto dto = dummyGatherDto(
+                "테스트 모임", "테스트 설명",
+                "test-user-id",
+                startDate, endDate,
+                startTime, endTime,
+                duration,
+                deadLine
+        );
+        GatherDto gather = gatherService.createGather(dto);
+
+        Mockito.when(joinServiceClient.getJoins(Mockito.anyString()))
+                .thenReturn(List.of(
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id1")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T03:31:00"),
+                                                        LocalDateTime.parse("2077-10-03T14:24:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id2")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T05:12:00"),
+                                                        LocalDateTime.parse("2077-10-03T06:40:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T12:15:00"),
+                                                        LocalDateTime.parse("2077-10-03T14:00:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id3")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T07:00:00"),
+                                                        LocalDateTime.parse("2077-10-03T08:35:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T09:00:00"),
+                                                        LocalDateTime.parse("2077-10-03T10:35:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T11:00:00"),
+                                                        LocalDateTime.parse("2077-10-03T14:00:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id4")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T08:12:00"),
+                                                        LocalDateTime.parse("2077-10-03T01:00:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id5")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T09:55:00"),
+                                                        LocalDateTime.parse("2077-10-03T12:20:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-04T03:55:00"),
+                                                        LocalDateTime.parse("2077-10-04T05:30:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id6")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T11:05:00"),
+                                                        LocalDateTime.parse("2077-10-03T12:45:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-04T03:45:00"),
+                                                        LocalDateTime.parse("2077-10-04T07:45:00")
+                                                )
+                                        )).build(),
+                                ResponseJoin.builder().gatherId(gather.getGatherId()).userId("test-user-id7")
+                                        .selectDateTimes(List.of(
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-03T11:30:00"),
+                                                        LocalDateTime.parse("2077-10-03T15:30:00")
+                                                ),
+                                                new ResponseDateTime(
+                                                        LocalDateTime.parse("2077-10-04T03:30:00"),
+                                                        LocalDateTime.parse("2077-10-04T05:00:00")
+                                                )
+                                        )).build()
+                        ));
+
+        List<ConfirmedGatherDto> result = gatherService.confirmTime(gather.getGatherId());
+
+        assertThat(result).containsExactly(
+                new ConfirmedGatherDto(
+                        gather.getGatherId(),
+                        LocalDateTime.parse("2077-10-03T12:15:00"),
+                        LocalDateTime.parse("2077-10-03T13:45:00"),
+                        4)
+        );
     }
 
 

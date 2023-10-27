@@ -1,9 +1,13 @@
 package com.example.gatherservice.service;
 
+import com.example.gatherservice.client.JoinServiceClient;
+import com.example.gatherservice.dto.ConfirmedGatherDto;
 import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.repository.GatherRepository;
 import com.example.gatherservice.enums.GatherState;
+import com.example.gatherservice.vo.ResponseDateTime;
+import com.example.gatherservice.vo.ResponseJoin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -15,7 +19,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -25,6 +30,7 @@ public class GatherServiceImpl implements GatherService {
     private final GatherRepository gatherRepository;
     private final ModelMapper mapper;
     private final Environment env;
+    private final JoinServiceClient joinServiceClient;
 
     @Override
     public GatherDto createGather(GatherDto gatherDto) {
@@ -88,5 +94,60 @@ public class GatherServiceImpl implements GatherService {
         gather.setState(GatherState.CLOSED);
 
         gatherRepository.save(gather);
+    }
+
+    @Override
+    public List<ConfirmedGatherDto> confirmTime(String gatherId) {
+        GatherEntity gather = gatherRepository.findByGatherId(gatherId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, env.getProperty("gather.not-found-msg")));
+
+        List<ResponseJoin> joins = joinServiceClient.getJoins(gatherId);
+
+        List<ConfirmedGatherDto> result = calculate(gatherId, joins, gather.getDuration());
+
+        return result;
+    }
+
+    private List<ConfirmedGatherDto> calculate(String gatherId, List<ResponseJoin> joins, LocalTime duration) {
+        List<ResponseDateTime> joinDateTimes = joins.stream()
+                .flatMap(join -> join.getSelectDateTimes().stream())
+                .sorted(Comparator.comparing(ResponseDateTime::getStartDateTime))
+                .toList();
+
+        PriorityQueue<ResponseDateTime> Queue = new PriorityQueue<>(Comparator.comparing(ResponseDateTime::getEndDateTime));
+
+        List<ConfirmedGatherDto> result = new ArrayList<>();
+        long maxQueueSize = 0L;
+        for (ResponseDateTime joinDateTime : joinDateTimes) {
+            if (Queue.isEmpty()) {
+                Queue.add(joinDateTime);
+            } else {
+                while (isShortOfDuration(duration, Queue, joinDateTime)) {
+                    Queue.poll();
+                }
+                Queue.add(joinDateTime);
+            }
+            result.add(new ConfirmedGatherDto(gatherId,
+                    joinDateTime.getStartDateTime(),
+                    addDateTime(joinDateTime.getStartDateTime(), duration),
+                    Queue.size()));
+
+            maxQueueSize = Math.max(maxQueueSize, Queue.size());
+        }
+
+        final long maxMemberCounts =maxQueueSize;
+        return result.stream().filter(res -> res.getMemberCounts() == maxMemberCounts).toList();
+    }
+
+    private boolean isShortOfDuration(LocalTime duration, PriorityQueue<ResponseDateTime> Queue, ResponseDateTime joinDateTime) {
+        return !Queue.isEmpty()
+                && Queue.peek().getEndDateTime().isBefore(addDateTime(joinDateTime.getStartDateTime(), duration));
+    }
+
+    private LocalDateTime addDateTime(LocalDateTime localDateTime, LocalTime duration) {
+        return localDateTime
+                .plusHours(duration.getHour())
+                .plusMinutes(duration.getMinute())
+                .plusSeconds(duration.getSecond());
     }
 }
