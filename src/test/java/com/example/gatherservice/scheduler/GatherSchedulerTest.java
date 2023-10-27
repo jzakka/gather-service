@@ -1,8 +1,10 @@
 package com.example.gatherservice.scheduler;
 
+import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.enums.GatherState;
 import com.example.gatherservice.repository.GatherRepository;
+import com.example.gatherservice.service.GatherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,20 +14,22 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 class GatherSchedulerTest {
     Clock clock;
-    GatherRepository gatherRepository;
+    GatherService gatherService;
     GatherScheduler gatherScheduler;
 
-    List<GatherEntity> gathers = gathers();
+    List<GatherDto> gathers = gathers();
 
-    private List<GatherEntity> gathers() {
-        List<GatherEntity> gathers = List.of(new GatherEntity(), new GatherEntity(), new GatherEntity());
+    private List<GatherDto> gathers() {
+        List<GatherDto> gathers = List.of(new GatherDto(), new GatherDto(), new GatherDto());
 
         // 0번째 모임은 스케줄러가 닫아야 함
         gathers.get(0).setGatherId("gather-0");
@@ -48,24 +52,16 @@ class GatherSchedulerTest {
     @BeforeEach
     void mockSetting() {
         clock = Mockito.mock(Clock.class);
-        gatherRepository = Mockito.mock(GatherRepository.class);
-        gatherScheduler = new GatherScheduler(gatherRepository, clock);
+        gatherService = Mockito.mock(GatherService.class);
+        gatherScheduler = new GatherScheduler(gatherService, clock);
 
         Instant futureInstant = Instant.parse("2099-01-01T00:00:00Z");
         Mockito.when(clock.instant()).thenReturn(futureInstant);
         Mockito.when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 
-        Mockito.when(gatherRepository.findAllByState(any())).thenReturn(gathers);
-        Mockito.when(gatherRepository.save(any(GatherEntity.class))).thenAnswer(invocation->{
-            GatherEntity saveGather = invocation.getArgument(0, GatherEntity.class);
-
-            gathers.stream()
-                    .filter(gatherEntity -> saveGather.getGatherId().equals(gatherEntity.getGatherId()))
-                    .findAny()
-                    .ifPresent(gatherEntity -> gatherEntity.setState(saveGather.getState()));
-
-            return saveGather;
-        });
+        Mockito.when(gatherService.getOpenGathers()).thenReturn(gathers);
+        Mockito.when(gatherService.confirmTime(anyString())).thenReturn(new ArrayList<>());
+        doNothing().when(gatherService).closeGather(anyString());
     }
 
     @Test
@@ -73,8 +69,7 @@ class GatherSchedulerTest {
     void closeGather() {
         gatherScheduler.checkGather();
 
-        assertThat(gathers.get(0).getState()).isEqualTo(GatherState.CLOSED);
-        assertThat(gathers.get(1).getState()).isEqualTo(GatherState.OPEN);
-        assertThat(gathers.get(2).getState()).isEqualTo(GatherState.CLOSED);
+        verify(gatherService, times(1)).confirmTime(anyString());
+        verify(gatherService, times(1)).closeGather(anyString());
     }
 }

@@ -2,6 +2,7 @@ package com.example.gatherservice.service;
 
 import com.example.gatherservice.dto.ConfirmedGatherDto;
 import com.example.gatherservice.dto.GatherDto;
+import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.vo.ResponseJoin;
 
 import java.util.List;
@@ -10,6 +11,8 @@ public interface GatherService {
     GatherDto createGather(GatherDto gatherDto);
 
     GatherDto getGatherByGatherId(String gatherId);
+
+    List<GatherDto> getOpenGathers();
 
     void closeGather(String gatherId);
 

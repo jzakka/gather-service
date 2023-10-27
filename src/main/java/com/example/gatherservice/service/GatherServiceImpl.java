@@ -3,7 +3,9 @@ package com.example.gatherservice.service;
 import com.example.gatherservice.client.JoinServiceClient;
 import com.example.gatherservice.dto.ConfirmedGatherDto;
 import com.example.gatherservice.dto.GatherDto;
+import com.example.gatherservice.entity.ConfirmedGatherEntity;
 import com.example.gatherservice.entity.GatherEntity;
+import com.example.gatherservice.repository.ConfirmedGatherRepository;
 import com.example.gatherservice.repository.GatherRepository;
 import com.example.gatherservice.enums.GatherState;
 import com.example.gatherservice.vo.ResponseDateTime;
@@ -28,6 +30,7 @@ import java.util.*;
 @Transactional
 public class GatherServiceImpl implements GatherService {
     private final GatherRepository gatherRepository;
+    private final ConfirmedGatherRepository confirmedGatherRepository;
     private final ModelMapper mapper;
     private final Environment env;
     private final JoinServiceClient joinServiceClient;
@@ -87,6 +90,13 @@ public class GatherServiceImpl implements GatherService {
     }
 
     @Override
+    public List<GatherDto> getOpenGathers() {
+        List<GatherEntity> openGathers = gatherRepository.findAllByState(GatherState.OPEN);
+
+        return openGathers.stream().map(entity -> mapper.map(entity, GatherDto.class)).toList();
+    }
+
+    @Override
     public void closeGather(String gatherId) {
         GatherEntity gather = gatherRepository.findByGatherId(gatherId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, env.getProperty("gather.not-found-msg")));
@@ -104,6 +114,12 @@ public class GatherServiceImpl implements GatherService {
         List<ResponseJoin> joins = joinServiceClient.getJoins(gatherId);
 
         List<ConfirmedGatherDto> result = calculate(gatherId, joins, gather.getDuration());
+
+        List<ConfirmedGatherEntity> confirmedGatherEntities = result.stream()
+                .map(res -> mapper.map(res, ConfirmedGatherEntity.class))
+                .toList();
+
+        confirmedGatherRepository.saveAll(confirmedGatherEntities);
 
         return result;
     }

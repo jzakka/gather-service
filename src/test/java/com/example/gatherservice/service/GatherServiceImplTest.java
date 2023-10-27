@@ -6,7 +6,6 @@ import com.example.gatherservice.dto.GatherDto;
 import com.example.gatherservice.scheduler.GatherScheduler;
 import com.example.gatherservice.vo.ResponseDateTime;
 import com.example.gatherservice.vo.ResponseJoin;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
