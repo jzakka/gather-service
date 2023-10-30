@@ -1,14 +1,13 @@
 package com.example.gatherservice.scheduler;
 
 import com.example.gatherservice.dto.GatherDto;
-import com.example.gatherservice.entity.GatherEntity;
 import com.example.gatherservice.enums.GatherState;
-import com.example.gatherservice.repository.GatherRepository;
 import com.example.gatherservice.service.GatherService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -17,7 +16,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -51,16 +49,18 @@ class GatherSchedulerTest {
 
     @BeforeEach
     void mockSetting() {
-        clock = Mockito.mock(Clock.class);
-        gatherService = Mockito.mock(GatherService.class);
-        gatherScheduler = new GatherScheduler(gatherService, clock);
+        clock = mock(Clock.class);
+        gatherService = mock(GatherService.class);
+        KafkaTemplate kafkaTemplate = mock(KafkaTemplate.class);
+
+        gatherScheduler = new GatherScheduler(gatherService, clock, kafkaTemplate, null, null);
 
         Instant futureInstant = Instant.parse("2099-01-01T00:00:00Z");
-        Mockito.when(clock.instant()).thenReturn(futureInstant);
-        Mockito.when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(clock.instant()).thenReturn(futureInstant);
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 
-        Mockito.when(gatherService.getOpenGathers()).thenReturn(gathers);
-        Mockito.when(gatherService.confirmTime(anyString())).thenReturn(new ArrayList<>());
+        when(gatherService.getOpenGathers()).thenReturn(gathers);
+        when(gatherService.confirmTime(anyString())).thenReturn(new ArrayList<>());
         doNothing().when(gatherService).closeGather(anyString());
     }
 
