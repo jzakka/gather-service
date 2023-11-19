@@ -20,8 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @MockBean({GatherScheduler.class})
@@ -65,8 +64,8 @@ class GatherServiceImplTest {
     void createInvalidDateGather() {
         GatherDto dto = dummyGatherDto(
                 "테스트 모임", "테스트 설명", "test-user-id",
-                LocalDate.now().plusDays(1), LocalDate.now(),
-                LocalTime.now(), LocalTime.now().plusHours(1),
+                endDate, startDate,
+                startTime, endTime,
                 LocalTime.of(1, 30),
                 LocalDateTime.now().plusDays(7)
         );
@@ -77,19 +76,43 @@ class GatherServiceImplTest {
     }
 
     @Test
-    @DisplayName("잘못된 시간 테스트")
-    void createInvalidTimeGather() {
+    @DisplayName("자정을 걸치는 모임시간 테스트, 성공")
+    void createMidnightGather() {
+        LocalTime startTime = LocalTime.of(23, 0);
+        LocalTime endTime = LocalTime.of(2, 30);
+
         GatherDto dto = dummyGatherDto(
                 "테스트 모임", "테스트 설명", "test-user-id",
                 startDate, endDate,
-                endTime, startTime,
+                startTime, endTime,
                 duration,
                 deadLine
         );
 
-        assertThatThrownBy(() -> gatherService.createGather(dto))
+        assertThatCode(()->gatherService.createGather(dto)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("자정을 걸치는 모임시간 테스트, 모임 기간이 너무 큼")
+    void createInvalidMidnightGather() {
+        LocalTime startTime = LocalTime.of(23, 0);
+        LocalTime endTime = LocalTime.of(2, 30);
+
+        // 시작시간과 끝시간이 3시간 30분의 차이를 갖는데 비해 4시간동안 모임진행을 하도록 설정
+        LocalTime tooLargeDuration = LocalTime.of(4, 0);
+
+
+        GatherDto dto = dummyGatherDto(
+                "테스트 모임", "테스트 설명", "test-user-id",
+                startDate, endDate,
+                startTime, endTime,
+                tooLargeDuration,
+                deadLine
+        );
+
+        assertThatThrownBy(()->gatherService.createGather(dto))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining(env.getProperty("gather.validation.time-invalid-msg"));
+                .hasMessageContaining(env.getProperty("gather.validation.duration-invalid-msg"));
     }
 
     @Test

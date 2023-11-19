@@ -22,7 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -60,16 +62,19 @@ public class GatherServiceImpl implements GatherService {
          */
         String errorMessage = null;
         LocalDateTime startDateTime = LocalDateTime.of(gatherDto.getStartDate(), gatherDto.getStartTime());
-        long hoursToMillis = gatherDto.getDuration().getHour() * 60 * 60 * 1000;
-        long minutesToMillis = gatherDto.getDuration().getMinute() * 60 * 1000;
-        long secondsToMillis = gatherDto.getDuration().getSecond() * 1000;
-        long durationTimeStamp = hoursToMillis + minutesToMillis + secondsToMillis;
+
+        long duration = gatherDto.getDuration().toSecondOfDay() * 1000L;
+        long maxDuration = 0;
+        if(gatherDto.getStartTime() .isAfter(gatherDto.getEndTime())){
+            maxDuration += TimeUnit.DAYS.toMillis(1) - gatherDto.getStartTime().toSecondOfDay() * 1000L;
+            maxDuration += Duration.between(LocalTime.of(0, 0), gatherDto.getEndTime()).toMillis();
+        }else {
+            maxDuration = Duration.between(gatherDto.getStartTime(), gatherDto.getEndTime()).toMillis();
+        }
 
         if (gatherDto.getStartDate().isAfter(gatherDto.getEndDate())) {
             errorMessage = env.getProperty("gather.validation.date-invalid-msg");
-        } else if (gatherDto.getStartTime().isAfter(gatherDto.getEndTime())) {
-            errorMessage = env.getProperty("gather.validation.time-invalid-msg");
-        } else if (durationTimeStamp > Duration.between(gatherDto.getStartTime(), gatherDto.getEndTime()).toMillis()) {
+        } else if (duration > maxDuration) {
             errorMessage = env.getProperty("gather.validation.duration-invalid-msg");
         } else if (!gatherDto.getDeadLine().plusDays(1).isBefore(startDateTime)) {
             errorMessage = env.getProperty("gather.validation.deadline-invalid-msg");
